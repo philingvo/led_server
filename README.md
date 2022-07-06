@@ -14,5 +14,6 @@ Control commands can be sent from this server via its native web interface eithe
 All project's software parts:
 1. [LED Server](https://github.com/philingvo/led_server)
 2. [Graphic Interface Application](https://github.com/philingvo/remote_unit_interface)
+3. [Dictionary](https://github.com/philingvo/dictionary)
 
 project.philingvo@gmail.com
