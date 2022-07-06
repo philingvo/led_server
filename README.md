@@ -10,3 +10,5 @@ For some working processes the server can use volumes of saved messages, fetches
 Also it makes requests to the Dictionary Server, handles responses and prepares text messages to show.
 The server handles control commands by a user or scripts, for instance, choosing working processes.
 Control commands can be sent from this server via its native web interface either the Graphic Interface Application.
+
+project.philingvo@gmail.com
