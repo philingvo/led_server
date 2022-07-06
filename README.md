@@ -1,6 +1,10 @@
 # led_server
 
-This is a main part of the Philingvo project: making a LED ticker based on Rapberry Pi 3 and WS2812B matrices.
+![Philingvo Logo](https://user-images.githubusercontent.com/108828980/177620920-a224e706-581a-4cfe-a0db-082f95e7a01a.png)
+
+This is a main software part of the Philingvo project: making a LED ticker based on Rapberry Pi 3 and WS2812B matrices.
+
+![IMG_20220526_181431](https://user-images.githubusercontent.com/108828980/177620864-efa45de1-c451-4aea-9ee5-c38a240d1194.jpg)
 
 The main task is transforming text messages to pulse-width modulation signals sending to the LED panel for rendering.
 These text messages can be sent to this sever as POST-requests via http protocol. 
