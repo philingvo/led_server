@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<style>
+			body {
+				font-size: 2em;
+			}
+
+			.hidden {
+				display: none;
+			}
+
+			.page_title,
+			.item,
+			.back {
+				padding: 10px 0;
+				text-transform: uppercase;
+				border-radius: 5px;
+				text-align: center;
+				color: white;
+			}
+
+			.item {
+				border: white 5px solid;
+			}
+
+			.back {
+				margin: 10px;
+				background-color: red;
+			}
+
+			.item,
+			.back {
+				cursor: pointer;
+			}
+
+			.without_color {
+				color: black;
+			}
+
+			.page_title {
+				padding: 30px 0;
+				margin-bottom: 20px; 
+				background-color: rgba(65,105,225);
+			}
+
+			#start {
+				background-color: crimson;
+			}
+
+			.part_text {
+				padding: 50px 0;
+			}
+
+			#navigation_bar {
+				margin: 40px 0;
+			}
+
+			#navigation_bar::after {
+				display: table;
+				content: "";
+				clear: both;
+			}
+
+			.navigation_button {
+				width: 49%;
+				border-radius: 5px;
+				color: white;
+				text-align: center;
+				cursor: pointer;
+				padding: 20px 0;
+			}
+
+			#previous {
+				float: left;
+				background-color: crimson;
+			}
+
+			#next {
+				float: right;
+				background-color: green;
+			}
+
+			#pronunciation {
+				background-color: lightgray;
+				position: absolute;
+				top: 20px;
+				right: 20px;
+				width: 70px;
+				height: 70px;
+				text-align: center;
+				vertical-align: middle;
+				transform: rotate(90deg);
+				cursor: pointer;
+				font-size: 1.7em;
+			}
+
+			.highlighted {
+				border-color: black;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="pronunciation" onclick="switchPronunciation(event)">:()</div>
+		<div id="playlists" class="hidden">
+			<div class="page_title">Playlists</div>
+			<div class="title hidden" style="background-color: blue;">PLAYLISTS</div>
+			<div class="content"></div>
+		</div>
+		<div id="sets_in_playlist" class="hidden">
+			<div class="page_title">Playlist: "<span class="title"></span>"</div>
+			<div class="content"></div>
+			<div class="back">Back</div>
+		</div>
+		<div id="set" class="hidden">
+			<div class="page_title">Set: "<span class="title"></span>"</div>
+			<div id="start" class="item">Start</div>
+			<div class="content"></div>
+			<div class="back">Back</div>
+		</div>
+		<div id="elements_in_set" class="hidden">
+			<div>E: <span id="element_number"></span>/<span id="total_elements"></span>
+				P: <span id="part_number"></span>/<span id="total_parts"></span>
+			</div>
+			<div class="content item part_text"></div>
+			<div id="navigation_bar">
+				<div id="previous" class="navigation_button"><</div>
+				<div id="next" class="navigation_button">></div>
+			</div>
+			<div class="back">Back</div>
+		</div>
+	</body>
+</html>
+<script>
+
+class Window {
+
+	rendered = false;
+	itemNumber = 0;
+	item = null;
+	items = [];
+
+	constructor(tag_name, title=true, back=true) {
+		this.window = document.getElementById(tag_name);
+		this.content = this.window.querySelector('.content');
+		if (title) {
+			this.title = this.window.querySelector('.title');
+		};
+		if (back) {
+			this.backButton = this.window.querySelector('.back');
+			this.backButton.onclick = this.returnBack;
+		};
+		this.language = 'en';
+	};
+
+	openWindow(savePrevious=true, saveItem=false) {
+		if (window.currentWindow) {
+			window.currentWindow.window.classList.add("hidden");
+			if (savePrevious) {
+				this.previousWindow = currentWindow;
+			};
+		};
+		window.currentWindow = this;
+		window.currentWindow.window.classList.remove("hidden");
+
+		if (this.title) {
+			window.text = this.title.innerHTML;
+			window.mainColor = this.title.style["background-color"];
+			sendMessage();
+		};
+
+		if (!saveItem) {
+			this.itemNumber = 0;
+		};
+
+		if (this.items) {
+			this.getItem();
+		};
+	};
+
+	returnBack() {
+		var closedWindow = window.currentWindow;
+		window.currentWindow.previousWindow.openWindow(false, true);
+
+		if (window.currentWindow.title) {
+			window.text = window.currentWindow.title.innerHTML;
+			window.mainColor = window.currentWindow.title.style["background-color"];
+			sendMessage();
+		};
+
+		closedWindow.cleanWindow();
+		closedWindow.rendered = false;
+	};
+
+	cleanWindow() {
+		while (this.content.firstChild) {
+			this.content.removeChild(this.content.firstChild);
+		};
+	};
+
+	getItem() {
+		if (this.items) {
+			this.item = this.items[this.itemNumber];
+		};
+	};
+
+	showItem() {
+		this.getItem();
+		if (this.item) {
+			window.text = this.item.innerHTML;
+			window.mainColor = this.item.style["background-color"];
+			this.highlightItem();
+			sendMessage();
+		};
+	};
+
+	highlightItem() {
+		if (this.item) {
+			this.item.classList.add("highlighted");
+		};
+	};
+
+	dehighlightItem() {
+		if (this.item) {
+			this.item.classList.remove("highlighted");
+		};
+	};
+
+	ArrowLeftFunction() {};
+	ArrowRightFunction() {};
+
+	ArrowDownFunction() {
+		this.dehighlightItem();
+		this.itemNumber = this.itemNumber + 1;
+		if (this.itemNumber >= this.items.length) {
+			this.itemNumber = 0;
+		};
+		this.showItem();
+	};
+
+	ArrowUpFunction() {
+		this.dehighlightItem();
+		this.itemNumber = this.itemNumber - 1;
+		if (this.itemNumber < 0) {
+			this.itemNumber = this.items.length - 1;
+		};
+		this.showItem();
+	};
+
+	SpaceFunction() {
+		this.showItem();
+	};
+
+	EnterFunction() {
+		if (this.item) {
+			this.highlightItem();
+			this.item.onclick({target: this.item});
+		};
+	};
+
+	NumpadEnterFunction() {
+		EnterFunction();
+	};
+
+	EscapeFunction() {
+		this.returnBack();
+	};
+
+	BackspaceFunction() {
+		this.EscapeFunction();
+	};
+
+};
+
+class SetWindow extends Window {
+
+	constructor(tag_name) {
+		super(tag_name);
+		this.startButton = document.getElementById('start');
+		this.startButton.onclick = this.openElementsInSet;
+	};
+
+	openElementsInSet() {
+		if (window.elementsInSetWindow.elements.length > 0) {
+			window.elementsInSetWindow.start();
+		} else {
+			alert("There're not elements in the set");
+		};
+	};
+
+	EnterFunction() {
+		this.openElementsInSet();
+	};
+
+};
+
+class ElementsInSetWindow extends Window {
+
+	elements = [];
+	partsTypes = [];
+	languages = [];
+	elementNumber = 0;
+	partNumber = 0;
+
+	constructor(tag_name) {
+		super(tag_name, false, true);
+		this.content.onclick = sendMessage;
+		this.previousButton = document.getElementById('previous');
+		this.previousButton.onclick = this.showPreviousPartEvent;
+		this.nextButton = document.getElementById('next');
+		this.nextButton.onclick = this.showNextPartEvent;
+
+		this.elementNumberBar = document.getElementById("element_number");
+		this.elementsTotalBar = document.getElementById("total_elements");
+		this.partNumberBar = document.getElementById("part_number");
+		this.partsTotalBar = document.getElementById("total_parts");
+	};
+
+	start() {
+		this.prepareLanguages()
+		this.renderPart();
+		this.openWindow();
+	};
+
+	prepareLanguages() {
+		this.languages = [];
+		for (var i=0;i<this.partsTypes.length;i++) {
+			this.languages.push(this.partsTypes[i].type.language.code);
+		};
+	};
+
+	renderPart(send=true) {
+		this.elementNumberBar.innerHTML = this.elementNumber + 1;
+		if (!this.elementsTotalBar.innerHTML) {
+			this.elementsTotalBar.innerHTML = this.elements.length;
+		};
+
+		this.partNumberBar.innerHTML = this.partNumber + 1;
+		this.partsTotalBar.innerHTML = this.elements[this.elementNumber]["parts"].length;
+
+		var part = this.elements[this.elementNumber]["parts"][this.partNumber]["part"];
+		this.language = this.languages[this.partNumber]
+		if (part.style) {
+			var style = JSON.parse(part.style);
+			if (style["main_color"]) {
+				// console.log(style["main_color"]);
+				this.content.style["background-color"] = style["main_color"];
+				this.content.style["color"] = "white";
+			} else {
+				this.content.style["background-color"] = null;
+				this.content.style["color"] = "black";
+			};
+		} else {
+			var style = null;
+			this.content.style["color"] = "black";
+			this.content.style["background-color"] = null;
+		};
+
+		if (part.content) {
+			var content = part.content;
+		} else {
+			var content = "No part yet";
+		};
+		this.content.innerHTML = content;
+		this.createPartData(part.content, style);
+		if (send) {
+			sendMessage();
+		};
+	};
+
+	showPreviousPartEvent() {
+		window.elementsInSetWindow.showPreviousPart();
+	};
+
+	showPreviousPart() {
+		this.partNumber = this.partNumber - 1;
+		if (this.partNumber < 0) {
+			this.elementNumber = this.elementNumber - 1;
+			if (this.elementNumber < 0) {
+				this.partNumber = 0;
+				this.elementNumber = 0;
+				var back = this.backToSetWindow();
+			} else {
+				this.partNumber = this.elements[this.elementNumber]["parts"].length - 1;
+				this.renderPart();
+			};
+		} else {
+			this.renderPart();
+		};
+	};
+
+	showNextPartEvent() {
+		window.elementsInSetWindow.showNextPart();
+	};
+
+	showNextPart() {
+		var partNumber = this.partNumber;
+		this.partNumber = this.partNumber + 1;
+		if (this.partNumber >= this.elements[this.elementNumber]["parts"].length) {
+			this.partNumber = 0;
+			this.elementNumber = this.elementNumber + 1;
+			if (this.elementNumber >= this.elements.length) {
+				var back = this.backToSetWindow();
+				if (back) {
+					this.elementNumber = 0;
+				} else {
+					this.partNumber = partNumber;
+					this.elementNumber = this.elementNumber - 1;
+				};
+			} else {
+				this.renderPart();
+			};
+		} else {
+			this.renderPart();
+		};
+	};
+
+	backToSetWindow() {
+		var back = confirm("Get back to Set Window");
+		if (back) {
+			this.partNumber = 0;
+			this.elementNumber = 0;
+			super.returnBack();
+		};
+		return back;
+	};
+
+	returnBack() {
+		window.mainColor = window.backgroundColor = window.decorations = null;
+		window.text = "Enter: LEAVE | Escape: STAY";
+		window.lettersColors = {"main_color": {"red": ["0-11"],
+												"blue": ["13"],
+												"green": ["15-26"]}
+								};
+		sendMessage(false);
+		if (window.elementsInSetWindow.backToSetWindow()) {
+			window.lettersColors = null;
+		} else {
+			this.renderPart();
+		};
+	};
+
+	createPartData(text, style) {
+		window.text = text;
+		if (style) {
+			window.mainColor = style["main_color"];
+			window.backgroundColor = style["background_color"];
+			window.lettersColors = style["letters_color"];
+			window.decorations = style["decorations"];
+		} else {
+			window.mainColor = window.backgroundColor = window.lettersColors = window.decorations = null;
+		};
+	};
+
+	SpaceFunction() {
+		pronounce();
+	};
+
+	EnterFunction() {
+		sendMessage();
+	};
+
+	ArrowLeftFunction() {
+		this.showPreviousPart();
+	};
+	ArrowRightFunction() {
+		this.showNextPart();
+	};
+
+};
+
+class Speech {
+
+	// languages = {'en': 'en-GB',
+	// 			'fr': 'fr-FR',
+	// 			'ru': 'ru-RU',
+	// 			'de': 'de-DE'};
+
+	constructor() {
+		this.refreshUtterence();
+		this.s = this.setSpeech();
+		// this.s.then((voices) => console.log(voices));
+		this.s.then((voices) => this.voices = voices);
+	};
+
+	refreshUtterence() {
+		this.utterance = new SpeechSynthesisUtterance();
+		this.utterance.pitch = 1;
+	};
+
+	setSpeech() {
+		return new Promise (
+			function (resolve, reject) {
+				// let synth = window.speechSynthesis;
+				let id;
+
+				id = setInterval(() => {
+					if (window.speechSynthesis.getVoices().length !== 0) {
+						resolve(window.speechSynthesis.getVoices());
+						clearInterval(id);
+					}
+				}, 10);
+			}
+		);
+	};
+
+	speak() {
+		// console.log(this.utterance.lang, this.utterance.voice);
+		window.speechSynthesis.speak(this.utterance);
+	};
+
+	findDefaultLanguages(language) {
+		// "Microsoft Anna - English (United States)"
+		// "Google UK English Male"
+		// "Google UK English Female"
+		// "Google US English"
+		window.defaultLanguages = {'en': 'Google US English'};
+		return window.defaultLanguages[language];
+	};
+
+	stop() {
+		window.speechSynthesis.cancel();
+	};
+
+	setVoice(language) {
+		this.stop();
+		if (!language) {
+			language = window.defaultInterfaceLanguage;
+		} else {
+			language = language.toLowerCase();
+		};
+		for (var i=0;i<this.voices.length;i++) {
+			if (this.voices[i].lang.includes(language)) {
+				if (language == 'en' && this.voices[i].name == this.findDefaultLanguages('en')) {
+					break;
+				} else if (language == 'en') {
+				} else {
+					break;
+				};
+			};
+		};
+		this.utterance.voice = this.voices[i];
+	};
+
+};
+
+var speech = new Speech();
+window.onload = downloadPlaylists();
+var dictionaryApplicationName = "dictionary";
+var dictionary_ip = null;
+var playlists_path = "api/playlists/?format=json"
+var playlists_address = null;
+
+var playlistsWindow = new Window("playlists", true, false);
+var setsInPlaylistWindow = new Window("sets_in_playlist");
+var setWindow = new SetWindow("set");
+var elementsInSetWindow = new ElementsInSetWindow("elements_in_set");
+
+var currentWindow = null;
+var currentPlaylistTitle = null;
+
+var text = null;
+var mainColor = null;
+var backgroundColor = null;
+var lettersColors = null;
+var decorations = null;
+var pronunciation = true;
+
+function switchPronunciation(event) {
+	if (pronunciation) {
+		event.target.innerHTML = ":x";	
+	} else {
+		event.target.innerHTML = ":()";
+	};
+	pronunciation = !pronunciation;
+}
+
+function downloadPlaylists() {
+	downloadJson('applications_servers', getDictionaryAddress);
+};
+
+function getDictionaryAddress(jsonData) {
+	dictionary_ip = jsonData[window.dictionaryApplicationName];
+	playlists_address = dictionary_ip + "/" + playlists_path;
+	downloadJson(playlists_address, renderPlaylists)
+};
+
+function renderPlaylists(jsonData) {
+	var listFragment = document.createDocumentFragment();
+	jsonData.forEach(function(eachPlaylist) {
+		var playlistItem =  document.createElement('div');
+		playlistItem.classList.add("item");
+		if (eachPlaylist.color) {
+			playlistItem.style = "background-color: " + eachPlaylist.color;
+		} else {
+			playlistItem.classList.add("without_color");
+		};
+		playlistItem.dataset.id = eachPlaylist.id;
+		playlistItem.dataset.lang = eachPlaylist.language['english_name'];
+		playlistItem.innerHTML = eachPlaylist.title;
+		playlistItem.onclick = openPlaylist;
+		listFragment.appendChild(playlistItem);
+		playlistsWindow.items.push(playlistItem);
+	});
+	playlistsWindow.content.appendChild(listFragment);
+	playlistsWindow.openWindow();
+};
+
+function openPlaylist(event) {
+	var playlistId = event.target.dataset.id;
+	setsInPlaylistWindow.title.innerHTML = event.target.innerHTML;
+	setsInPlaylistWindow.title.style["background-color"] = event.target.style["background-color"];
+	setsInPlaylistWindow.language = event.target.dataset.lang;
+	if (setsInPlaylistWindow.rendered) {
+		setsInPlaylistWindow.openWindow();
+	} else {
+		downloadJson(dictionary_ip + "/api/sets_in_playlist/?playlist_id=" + playlistId, renderSets);
+	};	
+};
+
+function renderSets(jsonData) {
+	var listFragment = document.createDocumentFragment();
+	jsonData.forEach(function(eachSet) {
+		// console.log(eachSet);
+		var setItem =  document.createElement('div');
+		setItem.classList.add("item");
+		if (eachSet.set.color) {
+			setItem.style = "background-color: " + eachSet.set.color;
+		} else {
+			setItem.classList.add("without_color");
+		};
+		setItem.dataset.id = eachSet.set.id;
+		setItem.dataset.lang = eachSet.set.type.language['english_name'];
+		setItem.innerHTML = eachSet.set.title;
+		setItem.onclick = openSet;
+		listFragment.appendChild(setItem);
+		setsInPlaylistWindow.items.push(setItem);
+	});
+	setsInPlaylistWindow.content.appendChild(listFragment);	
+	setsInPlaylistWindow.openWindow();
+	setsInPlaylistWindow.rendered = true;
+};
+
+function openSet(event) {
+	var setId = event.target.dataset.id;
+	setWindow.title.innerHTML = event.target.innerHTML;
+	setWindow.title.style["background-color"] = event.target.style["background-color"];
+	setWindow.language = event.target.dataset.lang;
+	setWindow.startButton.dataset.id = setId;
+	if (setWindow.rendered) {
+		setWindow.openWindow();
+	} else {
+		// downloadJson(dictionary_ip + "/api/set/?set_id=" + setId, renderSet);
+		downloadJson(dictionary_ip + "/api/part_types/?set_id=" + setId, renderSet);		
+		downloadJson(dictionary_ip + "/api/elements/?set_id=" + setId, refreshSet);
+	};
+};
+
+function renderSet(jsonData) {
+	var listFragment = document.createDocumentFragment();
+	var dataFields = [["type", "name"], ["type", "language", "original_name"], "abstract", "created_at"];
+	var setProperties = jsonData["set_properties"];
+	dataFields.forEach(function(eachField) {
+		if (typeof(eachField) === "object") {
+			var value = setProperties;
+			var fieldName;
+			eachField.forEach(function(eachSubField) {
+				fieldName = eachSubField;
+				value = value[fieldName];
+			});
+		} else {
+			var fieldName = eachField;
+			var value = setProperties[fieldName];
+		};
+		var dataItem = document.createElement('div');
+		dataItem.classList.add("item");
+		dataItem.innerHTML = fieldName.replace("_", " ") + ": " + value;
+		dataItem.classList.add("without_color");
+		listFragment.appendChild(dataItem);
+		setWindow.items.push(dataItem);
+	});
+	setWindow.content.appendChild(listFragment);
+	elementsInSetWindow.partsTypes = jsonData["parts_types"];
+};
+
+function refreshSet(jsonData) {
+	var dataItem = document.createElement('div');
+	dataItem.classList.add("item", "without_color");
+	dataItem.innerHTML = "Elements: " + jsonData.length;
+	setWindow.content.appendChild(dataItem);
+	setWindow.items.push(dataItem);
+	elementsInSetWindow.elements = jsonData;
+	setWindow.openWindow();
+	setWindow.rendered = true;
+};
+
+function downloadJson(requestPath, callFunction) {
+	var xhr = new XMLHttpRequest();
+	xhr.open('GET', requestPath);
+	xhr.onload = function(event) {
+		var rawData = event.target.response;
+		var jsonData = JSON.parse(rawData);
+		callFunction(jsonData);
+	};
+	xhr.onreadystatechange = function(event) {
+		if (xhr.readyState === 4 && xhr.status === 0) {
+			alert("Can't connect " + requestPath);
+		};
+	};
+	xhr.send();
+};
+
+function createMessage() {
+	var data = {};
+	data['string'] = window.text;		
+
+	if (window.mainColor) {
+		data['main_color'] = window.mainColor;
+	};
+	if (window.backgroundColor) {
+		data['background_color'] = window.backgroundColor;
+	};
+	if (window.lettersColors) {
+		data['letters_colors'] = window.lettersColors
+	};
+	if (window.decorations) {
+		data['decorations'] = window.decorations;
+	};
+	data = JSON.stringify(data);
+	console.log(data);
+	return data
+};
+
+function sendMessage(pronounceText=true) {
+	// Sending and receiving data in JSON format using POST method
+	var xhr = new XMLHttpRequest();	
+	xhr.open("POST", location.origin, true);
+	xhr.setRequestHeader("Content-Type", "application/json");
+	xhr.onreadystatechange = function(event) {
+		// if (xhr.readyState === 4 && xhr.status === 200) {
+		// };
+	};
+	xhr.send(createMessage());
+	if (pronounceText) {
+		pronounce();
+	};
+};
+
+function pronounce() {
+	if (pronunciation && window.text) {
+		window.speech.utterance.text = window.text;
+		window.speech.setVoice(window.currentWindow.language);
+		window.speech.speak();
+	};
+};
+
+var keys = ['ArrowLeft',
+			'ArrowRight',
+			'ArrowDown',
+			'ArrowUp',
+			'Space',
+			'Enter',
+			'NumpadEnter',
+			'Escape',
+			'Backspace'
+			];
+
+document.addEventListener('keydown', function(event) {
+	console.log(event.code);
+	if (keys.indexOf(event.code) >= 0) {
+		window.currentWindow[event.code + "Function"]();
+	};
+});
+
+</script>

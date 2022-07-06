@@ -1,0 +1,161 @@
+<html>
+	<head>
+		<title>Philingvo LED TICKER</title>
+		<style>
+
+			body, .blue {
+				background-color: rgba(65,105,225);
+			}
+
+			#logo {
+				text-align: center;
+				font-size: 0;
+				padding-left: auto;
+				padding-right: auto;
+			}
+
+			.cell {
+				height: 10px;
+			}
+
+			.column {
+				display: inline-block;
+				width: 10px;
+			}
+
+			.white {
+				background-color: white;
+			}
+
+			.red {
+				background-color: red;	
+			}
+
+			.green {
+				background-color: green;
+			}
+
+			.yellow {
+				background-color: yellow;
+			}
+
+			.orange {
+				background-color: orange;
+			}
+
+			#panels_container {
+				padding-top: 20px;
+				color: white;
+			}
+
+			.panel {
+				text-transform: uppercase;
+				display: block;
+				border-radius: 5px;
+				padding: 3px 5px;
+				text-align: center;
+				font-size: 2.5em;
+				color: inherit;
+				text-decoration: none;
+			}
+
+			.panel a {
+				color: white;
+				text-decoration: none;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="logo"></div>
+		<div id="panels_container">
+			<a href="send_message" class="panel red">Control</a>
+			<a href="letters" class="panel orange">Letters</a>
+			<a href="dictionary" class="panel green">Dictionary</a>
+		</div>
+	</body>
+</html>
+<script type="text/javascript">
+	var pixelArray = [
+		[0,1,1,1,1,1,1,1,1,1,1,0],
+		[0,1,1,1,1,0,0,0,1,1,1,0],
+		[0,1,0,0,0,"r","r","r",0,1,1,0],
+		[0,1,1,0,0,"r",0,"r",0,0,1,0],
+		[0,1,1,1,0,"r","r","g",1,0,1,0],
+		[0,1,1,1,0,0,"g","g","g",1,1,0],
+		[0,1,1,1,0,"y","y","g",1,0,1,0],
+		[0,1,1,0,0,"y",0,"y",0,0,1,0],
+		[0,1,0,0,0,"y","y","y",0,1,1,0],
+		[0,1,1,1,1,0,0,0,1,1,1,0],
+		[0,1,1,1,1,1,1,1,1,1,1,0],
+
+
+		[0,0,0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,1,1,1,1,1,0,0],
+		[0,0,0,0,0,1,0,1,0,0,0,0],
+		[0,0,0,0,0,1,1,1,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,1,1,1,1,1,0,0,0,0],
+		[0,0,0,0,0,1,0,0,0,0,0,0],
+		[0,0,0,0,0,1,1,1,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,"r","r","r",0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,"g","g","g","g","g",0,0,0],
+		[0,0,0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,"y","y","y",0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,1,1,1,0,0,0,0],
+		[0,0,0,0,0,1,0,0,0,0,0,0],
+		[0,0,0,0,0,1,1,1,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,1,1,1,0,1,0,0],
+		[0,0,0,0,0,1,0,1,0,1,0,0],
+		[0,0,0,0,0,1,1,1,1,1,0,0],
+		[0,0,0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,1,1,0,0,0,0,0],
+		[0,0,0,0,0,0,0,1,0,0,0,0],
+		[0,0,0,0,0,1,1,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,1,1,1,0,0,0,0],
+		[0,0,0,0,0,1,0,1,0,0,0,0],
+		[0,0,0,0,0,1,1,1,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0,0,0],
+	]
+
+	var logoContaiter = document.getElementById("logo");
+	var logoContent = document.createDocumentFragment();
+
+	for (var i=0; i<pixelArray.length; i++) {
+			var pixelsColumn = pixelArray[i];
+			var column = document.createElement('div');
+			column.classList.add("column")
+			for (var j=0; j<pixelsColumn.length; j++) {
+				var pixel = pixelsColumn[j];
+				var cell = document.createElement('div');
+				cell.classList.add("cell")
+				switch (pixel) {
+					case 1:
+					case "w":
+						cell.classList.add("white");
+						break;
+					case "r":
+						cell.classList.add("red");
+						break;
+					case "g":
+						cell.classList.add("green");
+						break;
+					case "y":
+						cell.classList.add("yellow");
+						break;
+					case 0:
+					case "b":
+						cell.classList.add("blue");
+						break;
+				};
+				column.appendChild(cell);
+			};
+		logoContent.appendChild(column);
+	};
+	logoContaiter.appendChild(logoContent);
+	console.log(logoContaiter);
+</script>

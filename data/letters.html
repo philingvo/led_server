@@ -1,0 +1,1064 @@
+<html>
+	<head>
+		<style>
+			.mode {
+				display: none;
+				text-align: center;
+			}
+
+			.mode.opened {
+				display: block;
+			}
+
+			.letter_space {
+				padding: 10px 0 10px 0;
+			}
+
+			.big_button {
+				background-color: gray;
+				border: 1px solid black;
+				/*text-align: center;*/
+				cursor: pointer;
+			}
+
+			.eraser {
+				color: white;
+				background-color: black;
+			}
+
+			.column_header {
+				border: 2px gray solid;
+			}
+
+			.column {
+				display: inline-block;
+				width: 44px;
+			}
+
+			.cell,
+			.row_header {
+				border: 2px gray solid;
+				background-color: black;
+				height: 40px;
+			}
+
+			.row_header,
+			.column_header {
+				/*text-align: center;*/
+				background-color: white;
+			}
+
+			input {
+				border: 2px gray solid;
+			}
+
+			.selected,
+			.filled {
+				background-color: crimson;
+			}
+
+			.сell_code {
+				width: inherit;
+			}
+
+			.selector_container select {
+				border: 2px gray solid;
+			}
+
+			.selector_container input {
+				width: 40px;
+			}
+
+			.title {
+				text-align: center;
+				margin: 0;
+				border: 1px solid black;
+			}
+		</style>
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=yes">
+	</head>
+	<body>
+		<p class="title">Letters</p>
+		<div id="choose_mode" class="mode">
+			<select id="choose_mode_selector" title="Select actions">
+				<option value="save_unknown_letters" selected>Save unknown letters</option>
+				<option value="change_letters">Change saved letters</option>
+			</select>
+			<div class="big_button" id="choose_mode_button">Go to mode</div>
+		</div>
+		<div id="save_unknown_letters" class="mode">
+			<p class="title">Save unknown letters</p>
+		</div>
+		<div id="change_letters" class="mode">
+			<p class="title">Change saved letters</p>
+		</div>
+	</body>
+</html>
+<script>
+class Page {
+
+	constructor(pageName, workWithLetters) {
+		this.workWithLetters = workWithLetters;
+		this.pageName = pageName;
+		this.findHTMLElement();
+	};
+
+	findHTMLElement() {
+		this.htmlElement = document.getElementById(this.pageName);
+	};
+
+	changePageAppearance() {
+		this.htmlElement.classList.toggle('opened');
+	};
+
+	cleanNodeContent = function(parentNode) {
+		while (parentNode.firstChild) {
+			parentNode.removeChild(parentNode.firstChild);
+		};
+	};
+
+};
+
+class ChooseModePage extends Page {
+	
+	constructor(pageName, workWithLetters) {
+		super(pageName, workWithLetters);
+		this.setOnChangeFunction();
+	};
+
+	setOnChangeFunction() {
+		var chooseModeButton = document.getElementById("choose_mode_button");
+		chooseModeButton.onclick = this.openChosenPageDecorator;
+	};
+
+	openChosenPageDecorator(event) {
+		var modeSelector = document.getElementById("choose_mode_selector");
+		window.workWithLetters.changePage(modeSelector.value);
+	};
+
+};
+
+class LetterPage extends Page {
+
+	elementList = ['ChangeMouseButtonsButton',					
+					'FillAllButton',
+					'CleanAllButton',
+					'AddColumnLeftButton',
+					'AddColumnRightButton',
+					'DeleteColumnButton',
+					'LetterSelector',
+					'BaseLetterSelector',
+					'LetterSpace',
+					'SaveButton',
+					'BackButton'];
+
+	classNames = {letterSpace: 'letter_space',
+					column: 'column',
+					cell: 'cell',
+					filledCell: 'filled',
+					cellCodeInput: 'сell_code',
+					bigButton: 'big_button',
+					selectorContainer: 'selector_container',
+					columnHeader: 'column_header',
+					rowHeader: 'row_header',
+					eraser: 'eraser'};
+
+	elementsName = {mainSelector: 'mainSelector',
+					baseSelector: 'baseSelector'
+					};
+
+	type = "letterPage";
+	inWork = false;
+	inDeletingColumnProcess = false;
+	paintingTools = ['Pen', 'Eraser'];
+
+	constructor(pageName, workWithLetters) {
+		super(pageName, workWithLetters);
+		this.letterHeight = workWithLetters.letterHeight;
+		this.defaultLetterWidth = workWithLetters.defaultLetterWidth;
+		this.baseLettersCodes = workWithLetters.savedLettersCodes;
+		this.eraseElementsArrays();
+		this.setLettersArrays();
+		if (this.changeElementFunctionList) {
+			this.changeElementFunctionList();
+		};
+		this.setFirstLetter();
+		this.fillPage();
+	};
+
+	setFirstLetter() {
+		this.setLetter(this.lettersArray[0]);		
+	};
+
+	setLettersArrays() {
+		this.baseLettersArray = this.workWithLetters.savedLettersArray;
+	};
+
+	eraseElementsArrays() {
+		this.columnsElements = [];
+		this.cellCodeInputElements = [];
+	};
+
+	eraseLetter() {
+		this.eraseElementsArrays();
+		this.cleanLetterSpaceElement();
+	};
+
+	cleanLetterSpaceElement() {
+		this.cleanNodeContent(this.letterSpace);
+	};
+
+	fillPage() {
+		var pageElementsFragment = document.createDocumentFragment();
+		for (var i=0;i<this.elementList.length;i++) {
+			var createFunctionName = this.elementList[i];
+			pageElementsFragment.appendChild(this['create' + createFunctionName]());
+		};
+		this.htmlElement.appendChild(pageElementsFragment);
+	};
+
+	createBackButton() {
+		return this.createBigButton('Back to choosing mode', this.closePageEvent);
+	};
+
+	closePageEvent() {
+		var target = event.target;
+		var pageName = target.parentElement.id;
+		window.workWithLetters.pages[pageName].closePage();
+	};
+
+	closePage() {
+		var quit = true;
+		if (this.inWork) {
+			quit = confirm('The code creating process has been started.\nAre you sure to quit this page?')
+		};
+		if (quit) {
+			this.workWithLetters.openStartPage();
+		};		
+	};
+
+	refreshSelector(selectorElement, letterArray) {
+		// console.log(selectorElement)
+		this.cleanNodeContent(selectorElement);
+		var options = this.createLettersOptions(letterArray);
+		selectorElement.appendChild(options);
+	};
+
+	refreshLetterSelector() {
+		this.refreshSelector(this[this.elementsName.mainSelector], this.lettersArray);
+	};
+
+	createLetterSelector() {
+		return this.createSelector(this.lettersArray, this.changeLetterEvent, this.elementsName.mainSelector, 'Current letter:');
+	};
+
+	refreshBaseLetterSelector() {
+		this.refreshSelector(this[this.elementsName.baseSelector], this.baseLettersArray);
+	};
+
+	createBaseLetterSelector() {
+		// console.log(this.baseLettersArray);
+		return this.createSelector(this.baseLettersArray, this.setBaseLetterEvent, this.elementsName.baseSelector, 'Base letter:');
+	};
+
+	createSelector(lettersArray, onchangeFunction, elementName, selectorName) {
+		var letterSelectorContainer = document.createElement('tr');
+		letterSelectorContainer.classList.add(this.classNames.selectorContainer);
+		var nameSelectorElement = document.createElement('td');
+		nameSelectorElement.innerHTML = selectorName;
+		letterSelectorContainer.appendChild(nameSelectorElement);
+		var letterSelectorCell = document.createElement('td');
+		var letterSelector = document.createElement('select');
+		letterSelectorCell.appendChild(letterSelector);
+		letterSelector.onchange = onchangeFunction;
+		var options = this.createLettersOptions(lettersArray);
+		letterSelector.appendChild(options);
+		letterSelectorContainer.appendChild(letterSelectorCell);
+		this[elementName] = letterSelector;
+		return letterSelectorContainer;
+	};
+
+	createLettersOptions(lettersArray) {
+		var optionsFragment = document.createDocumentFragment();
+		for (var i=0;i<lettersArray.length;i++) {
+			var regExp = /\S/; // '\0'
+			var regRes = lettersArray[i].match(regExp);
+			if (regRes != null && regRes.input != '\0') {
+				var option = document.createElement('option');
+				option.innerHTML = lettersArray[i];
+				// console.log(this.savedLettersCodes[letters[i]]);
+				optionsFragment.appendChild(option);
+			};
+		};
+		return optionsFragment;
+	};
+
+	setLetter(letter) {
+		this.currentLetter = letter;
+		this.setLetterCode();
+	};
+
+	changeLetterEvent(event) {
+		var target = event.target;
+		var pageName = target.parentElement.parentElement.parentElement.id;
+		window.workWithLetters.pages[pageName].changeLetter(target.value);
+	};
+
+	changeLetter(letter) {
+		this.setLetter(letter);
+		// console.log(this.currentLetter, this.currentLetterCode)
+		this.eraseLetter();
+		this.createLetterColumns();
+	};
+
+	setBaseLetterEvent(event) {
+		var target = event.target;
+		var pageName = target.parentElement.parentElement.parentElement.id;
+		window.workWithLetters.pages[pageName].setBaseLetter(target.value);
+	};
+
+	setBaseLetter(letter) {
+		// console.log(letter)
+		this.inWork = true;
+		this.currentLetterCode = this.getLetterCode(letter, this.baseLettersCodes);
+		this.eraseLetter();
+		this.createLetterColumns();
+	};
+
+	createinputLetter() {
+		var inputLetterContainer = document.createElement('tr');
+		inputLetterContainer.classList.add(this.classNames.selectorContainer);
+		var nameSelectorElement = document.createElement('td');
+		nameSelectorElement.innerHTML = 'Input new letter: ';
+		inputLetterContainer.appendChild(nameSelectorElement);
+		var letterInputCell = document.createElement('td');
+		this.inputLetter = document.createElement('input');
+		this.inputLetter.type = "text";
+		this.inputLetter.maxLength = 1;
+		this.inputLetter.onchange = this.inputLetterChangeEvent;
+		letterInputCell.appendChild(this.inputLetter)
+		inputLetterContainer.appendChild(letterInputCell);
+		return inputLetterContainer;
+	};
+
+	inputLetterChangeEvent() {
+		var target = event.target;
+		var pageName = target.parentElement.parentElement.parentElement.id;
+		window.workWithLetters.pages[pageName].inputLetterChange(target.value);
+	};
+
+	inputLetterChange(letter) {
+		// console.log(letter)
+		if (this.lettersArray.indexOf(letter) >= 0) {
+			this.setNewLetterAndSetInMainSelector(letter);
+			this.inputLetter.value = '';
+			if (this.mainSelector.disabled) {
+				this.unblockMainSelector();
+			};
+		} else if (this.baseLettersArray.indexOf(letter) >= 0) {
+			var changeSavedLetter = confirm('Letter "' + letter + '" already exists.\nGo to change this letter?');	
+			if (changeSavedLetter) {
+				this.workWithLetters.changePage('change_letters', false);
+				this.workWithLetters.pages['change_letters'].setNewLetterAndSetInMainSelector(letter);
+			};
+			this.inputLetter.value = '';
+		} else if (!letter) {
+			this.mainSelector.disabled = false;
+			this.setFirstLetter();
+		} else {
+			this.changeLetter(letter);
+			this.mainSelector.disabled = true;
+		};
+	};
+
+	unblockMainSelector() {
+		this.mainSelector.disabled = false;
+		this.inputLetter.value = '';
+	};
+
+	createBigButton(textButton, onclickFunction) {
+		var bigButton = document.createElement('div');
+		bigButton.classList.add(this.classNames.bigButton);
+		bigButton.innerHTML = textButton;
+		bigButton.onclick = onclickFunction;
+		return bigButton;
+	};
+
+	createCancelChangesButton(columnNumber) {
+		return this.createBigButton('Cancel changes', this.cancelChangesEvent);
+	};
+
+	cancelChangesEvent(event) {
+		var pageName = event.target.parentElement.id;
+		window.workWithLetters.pages[pageName].cancelChanges();
+	};
+
+	cancelChanges() {
+		this.eraseLetter();
+		this.setLetterCode();
+		this.createLetterColumns();
+	};
+
+	createCleanAllButton() {
+		return this.createBigButton('Clean all', this.cleanLetterSpaceEvent);
+	};
+
+	cleanLetterSpaceEvent(event) {		
+		var clean = confirm('Clean the letter field');
+		if (clean) {
+			var pageName = event.target.parentElement.id;
+			window.workWithLetters.pages[pageName].cleanLetterSpace();
+		};
+	};
+
+	cleanLetterSpace() {
+		this.inWork = true;
+		this.eraseLetter();
+		this.createZeroLetterCode(this.currentLetterCode.length);
+		this.createLetterColumns();
+	};
+
+	createLetterSpace() {
+		this.letterSpace = document.createElement('div');
+		this.letterSpace.classList.add(this.classNames.letterSpace)
+		this.createRowNumbersColumn();
+		this.letterSpace.oncontextmenu = (e) => {
+  			e.preventDefault();
+		};
+		// this.letterSpace.dataset.page = this.pageName;
+		this.createLetterColumns();
+		return this.letterSpace;
+	};
+
+	createSendButton() {
+		return this.createBigButton('Send', this.sendEvent);
+	};
+
+	sendEvent(event) {
+		var xhr = new XMLHttpRequest();
+		xhr.open("POST", location.origin, true);
+		xhr.onreadystatechange = function(event) {
+			if (xhr.readyState === 4 && xhr.status === 200) {
+				// var json = JSON.parse(xhr.responseText);
+			};
+		};
+		var letter = workWithLetters.pages[workWithLetters.openedPageName].currentLetter;
+		var data = {};
+		data['string'] = letter;
+		data = JSON.stringify(data);
+		xhr.send(data);
+	};
+
+	createFillAllButton() {
+		return this.createBigButton('Fill all', this.fillLetterSpaceEvent);
+	};
+
+	fillLetterSpaceEvent(event) {
+		var fill = confirm('Fill the letter field');
+		if (fill) {
+			var pageName = event.target.parentElement.id;
+			window.workWithLetters.pages[pageName].fillLetterSpace();
+		};
+	};
+
+	fillLetterSpace() {
+		this.inWork = true;
+		this.eraseLetter();
+		this.createFullLetterCode(this.currentLetterCode.length);
+		this.createLetterColumns();		
+	};
+
+	createAddColumnRightButton() {
+		return this.createBigButton('Create right column', this.addColumnRightEvent);
+	};
+
+	addColumnRightEvent() {
+		var pageName = event.target.parentElement.id;
+		window.workWithLetters.pages[pageName].addColumnRight();
+	};
+
+	addColumnRight() {
+		this.currentLetterCode.push(this.createCodeAndCodeArrayDict(0));
+		var newColumn = this.createColumnElement(this.currentLetterCode.length-1);
+		this.letterSpace.appendChild(newColumn);
+	};
+
+	createAddColumnLeftButton() {
+		return this.createBigButton('Create left column', this.addColumnLeftEvent);
+	};
+
+	addColumnLeftEvent() {
+		var pageName = event.target.parentElement.id;
+		window.workWithLetters.pages[pageName].addColumnLeft();	
+	};
+
+	addColumnLeft() {
+		this.currentLetterCode.splice(0, 0, this.createCodeAndCodeArrayDict(0));
+		this.eraseLetter();
+		this.createLetterColumns();
+	};
+
+	createDeleteColumnButton() {
+		this.deleteColumnButton = this.createBigButton('Delete Column', this.deleteColumnEvent);
+		return this.deleteColumnButton;
+	};
+
+	deleteColumnEvent() {
+		var pageName = event.target.parentElement.id;
+		window.workWithLetters.pages[pageName].deleteColumn();
+	};
+
+	deleteColumn() {
+		// console.log(this.deleteColumnButton);
+		this.deleteColumnButton.classList.toggle(this.classNames.filledCell);
+		this.inDeletingColumnProcess = !this.inDeletingColumnProcess;
+		// this.currentLetterCode.splice(columnNumber - 1, 1);
+		// this.eraseLetter();
+		// this.createLetterColumns();
+	};
+
+	createChangeMouseButtonsButton() {
+		this.changeMouseButtonsButton = this.createBigButton(this.paintingTools[0], this.changeMouseButtonsButtonEvent);
+		this.changeMouseButtonsButton.classList.add(this.classNames.filledCell);
+		this.changeMouseButtonsButton.classList.add(this.classNames.eraser);
+		return this.changeMouseButtonsButton;
+	};
+
+	changeMouseButtonsButtonEvent(event) {
+		var pageName = event.target.parentElement.id;
+		window.workWithLetters.pages[pageName].changeMouseButtonsButtonFunction();
+	};
+
+	changeMouseButtonsButtonFunction() {
+		this.changeMouseButtonsButton.classList.toggle(this.classNames.filledCell);
+		this.paintingTools.reverse();
+		this.changeMouseButtonsButton.innerHTML = this.paintingTools[0];
+		this.workWithLetters.mouseButtonsForPainting.reverse();
+	};
+
+	createRowNumbersColumn() {
+		var rowNumbersColumnElement = document.createElement('div');
+		rowNumbersColumnElement.classList.add(this.classNames.column);
+		var rowNumbersColumnElementFragment = document.createDocumentFragment();
+		rowNumbersColumnElementFragment.appendChild(this.createColumnNumberElement('-'));
+		for (var i=0;i<this.letterHeight;i++) {
+			var rowNumbersColumn = this.createRowNumberElement(i);
+			rowNumbersColumnElementFragment.appendChild(rowNumbersColumn);
+		};
+		rowNumbersColumnElementFragment.appendChild(this.createColumnNumberElement('-'));
+		rowNumbersColumnElement.appendChild(rowNumbersColumnElementFragment);
+		this.letterSpace.appendChild(rowNumbersColumnElement);
+	};
+
+	createRowNumberElement(rowNumber) {
+		var rowNumberElement = document.createElement('div');
+		rowNumberElement.classList.add(this.classNames.rowHeader);
+		rowNumberElement.innerHTML = rowNumber;
+		return rowNumberElement;
+	};
+
+	createLetterColumns() {
+		var letterSpaceFragment = document.createDocumentFragment();
+		// console.log(this.currentLetterCode)
+		for (var i=0;i<this.currentLetterCode.length;i++) {
+			var columnElement = this.createColumnElement(i);
+			letterSpaceFragment.appendChild(columnElement);
+		};
+		this.letterSpace.appendChild(letterSpaceFragment);
+	};
+
+	createColumnElement(columnNumber) {
+		var columnElement = document.createElement('div');
+		columnElement.classList.add(this.classNames.column);
+		columnElement.dataset.column = columnNumber;
+		var cells = this.createCells(columnNumber);
+		columnElement.appendChild(cells);
+		this.columnsElements.push(columnElement);
+		return columnElement;
+	};
+
+	createCells(columnNumber) {
+		var columnDict = this.currentLetterCode[columnNumber];
+		var columnCode = columnDict.code;
+		// var columnArray = this.createColumnArray(columnCode);
+		var columnArray = columnDict.codeArray;
+		var columnFragment = document.createDocumentFragment();
+
+		var columnNumberElement = this.createColumnNumberElement(columnNumber);
+		columnFragment.appendChild(columnNumberElement);
+
+		for (var i=0;i<columnArray.length;i++) {
+			var cell = document.createElement('div');
+			cell.dataset.row = i;
+			cell.classList.add(this.classNames.cell);
+			if (columnArray[i]) {
+				cell.classList.add(this.classNames.filledCell);
+			};
+			// cell.onclick = this.cellOnClickEvent;
+			cell.onmousedown = this.cellOnClickEvent;
+			cell.onmouseover = this.cellMouseOverEvent;
+			columnFragment.appendChild(cell);
+		};
+
+		var cellCodeInput = this.createCellCodeNumber(columnNumber, columnCode);
+		this.cellCodeInputElements.push(cellCodeInput);
+		columnFragment.appendChild(cellCodeInput);
+		return columnFragment;
+	};
+
+	createColumnNumberElement(columnNumber) {
+		var columnNumberElement = document.createElement('div');
+		columnNumberElement.classList.add(this.classNames.columnHeader);
+		columnNumberElement.innerHTML = columnNumber;
+		columnNumberElement.onclick = this.chooseColumnNumberEvent;
+		columnNumberElement.dataset.column = columnNumber;
+		return columnNumberElement;
+	};
+
+	chooseColumnNumberEvent(event) {
+		var cellCodeInput = event.target;
+		var columnNumber = Number(cellCodeInput.dataset.column);
+		var pageName = cellCodeInput.parentElement.parentElement.parentElement.id;
+		var page = window.workWithLetters.pages[pageName];
+		if (page.inDeletingColumnProcess) {
+			page.chooseColumnNumber(columnNumber);
+		};
+	};
+
+	chooseColumnNumber(columnNumber) {
+		var deleteColumn = confirm('Delete column ' + columnNumber);
+		if (deleteColumn) {
+			this.currentLetterCode.splice(columnNumber, 1);
+			this.eraseLetter();
+			this.createLetterColumns();
+		};
+		this.inDeletingColumnProcess = false;
+		this.deleteColumnButton.classList.toggle(this.classNames.filledCell);
+	};
+
+	createCellCodeNumber(columnNumber, columnCode) {
+		var cellCodeInput = document.createElement('input');
+		cellCodeInput.classList.add(this.classNames.cellCodeInput);
+		cellCodeInput.type = "number";
+		cellCodeInput.min = 0;
+		cellCodeInput.max = 2 ** this.letterHeight - 1;
+		cellCodeInput.value = columnCode;
+		cellCodeInput.onchange = this.changeColumnCodeNumberEvent;
+		cellCodeInput.dataset.column = columnNumber;
+		return cellCodeInput;
+	};
+
+	changeColumnCodeNumberEvent(event) {
+		var cellCodeInput = event.target;
+		var columnCode = cellCodeInput.value;
+		var columnNumber = cellCodeInput.dataset.column;
+		// var pageName = cellCodeInput.parentElement.parentElement.dataset.page;
+		var pageName = cellCodeInput.parentElement.parentElement.parentElement.id;
+		// console.log(pageName)
+		var page = window.workWithLetters.pages[pageName];
+		var changeColumn = confirm('Are you sure to change column "' + cellCodeInput.dataset.column + '"?');
+		if (changeColumn) {
+			page.changeColumnCodeNumber(columnCode, columnNumber);
+		} else {
+			var eraseNumber = confirm('Do you want to leave the entered value "' + columnCode + '"?');
+			if (!eraseNumber) {cellCodeInput.value = page.currentLetterCode[columnNumber]};
+		};
+	};
+
+	changeColumnCodeNumber(columnCode, columnNumber) {
+		this.currentLetterCode[columnNumber] = this.createCodeAndCodeArrayDict(Number(columnCode));
+		var columnElement = this.columnsElements[columnNumber];
+		this.cleanNodeContent(columnElement);
+		// console.log(columnElement);		
+		var cells = this.createCells(columnNumber);
+		columnElement.appendChild(cells);
+		// console.log(this.currentLetterCode)
+	};
+
+	cellOnClickEvent(event) {
+		window.workWithLetters.runCellHandler(event, 'cellOnClick');
+	};
+
+	cellOnClick(column, row, action) {
+		this.inWork = true;
+		if (action == 'add' && !this.currentLetterCode[column].codeArray[row] || action == 'remove' && this.currentLetterCode[column].codeArray[row]) {
+			this.currentLetterCode[column].codeArray[row] = !(this.currentLetterCode[column].codeArray[row]);
+			var strBinCode = this.createStrBinCode(this.currentLetterCode[column].codeArray);
+			var intCode = parseInt(strBinCode, 2);
+			this.currentLetterCode[column].code = intCode;
+			this.cellCodeInputElements[column].value = intCode;
+		};
+	};
+
+	cellMouseOverEvent(event) {
+		window.workWithLetters.runCellHandler(event, 'cellOnClick');
+	};
+
+	createStrBinCode(codeArray) {
+		var strBinCode = '';
+		codeArray.forEach(function(eachCell) {
+			if (eachCell) {
+				var intValue = 1;
+			} else {
+				var intValue = 0;
+			};
+			strBinCode += intValue;
+		});
+		return strBinCode;
+	};
+
+	createColumnArray(columnCode) {
+		// this.workWithLetters.letterHeight;
+		var binaryCode = columnCode.toString(2);
+		var columnArray = [];
+		var zeros = this.letterHeight - binaryCode.length;
+		for (var z=0;z<zeros;z++) {
+			columnArray.push(false);
+		};
+		for (var i=0;i<binaryCode.length;i++) {
+			if (Number(binaryCode[i])) {
+				var value = true;
+			} else {
+				var value = false;
+			};
+			columnArray.push(value);
+		};
+		return columnArray;
+	};
+
+	createCodeAndCodeArrayDict(code) {
+		return {code: code,
+				codeArray: this.createColumnArray(code)};
+	};
+
+	createZeroLetterCode(letterWidth) {
+		this.createAllColumnLetterCode(letterWidth, 0);
+	};
+
+	createFullLetterCode(letterWidth) {
+		this.createAllColumnLetterCode(letterWidth, 2 ** this.letterHeight - 1);
+	};
+
+	createAllColumnLetterCode(letterWidth, code) {
+		this.currentLetterCode = [];
+		for (var i=0;i<letterWidth;i++) {
+			// var codeArray = this.createColumnArray(code);
+			this.currentLetterCode.push(this.createCodeAndCodeArrayDict(code));
+		};
+	}
+
+	getLetterCode(letter, lettersCodes) {
+		var letterCode = lettersCodes[letter];
+		// console.log(letter, letterCode)
+		var letterCodeArray = [];
+		for (var i=0;i<letterCode.length;i++) {
+			var code = letterCode[i];
+			letterCodeArray.push(this.createCodeAndCodeArrayDict(code));
+		};
+		return letterCodeArray;
+	};
+
+	createSaveButton() {
+		return this.createBigButton('Save', this.saveLetterCodeEvent);
+	};
+
+	saveLetterCodeEvent(event) {
+		var target = event.target;
+		var pageName = target.parentElement.id;
+		window.workWithLetters.saveLetterCode(pageName);
+	};
+
+	refreshAllSelectors() {
+		this.refreshLetterSelector();
+		this.refreshBaseLetterSelector();
+	};
+
+	setNewLetterAndSetInMainSelector(letter) {
+		this.changeLetter(letter);
+		this.setLetterInMainSelector();
+	};
+
+	setLetterInMainSelector() {
+		for (var i=0;i<this.mainSelector.children.length;i++) {
+			var option = this.mainSelector.children[i];
+			if (option.value == this.currentLetter) {
+				option.selected = true;
+				break;
+			};
+		};
+	};
+
+};
+
+class ChangeLettersPage extends LetterPage {
+
+	// constructor(pageName, workWithLetters) {
+	// 	super(pageName, workWithLetters);
+	// };
+	
+	changePageAppearance(render=true) {
+		super.changePageAppearance();
+		if (render) {
+			this.changeLetter(this.mainSelector.children[0].innerHTML);
+			this.setLetterInMainSelector();
+		};
+	};
+
+	changeElementFunctionList() {
+		this.elementList.splice(3, 0, 'CancelChangesButton');
+		this.elementList.splice(0, 0, 'SendButton');
+	};
+
+	setLettersArrays() {
+		super.setLettersArrays();
+		this.lettersCodes = this.workWithLetters.savedLettersCodes;
+		this.lettersArray = this.workWithLetters.savedLettersArray;
+		// this.lettersArray = Object.keys(this.lettersCodes).sort();
+	};
+
+	setLetterCode() {
+		this.currentLetterCode = this.getLetterCode(this.currentLetter, this.lettersCodes);
+	};
+
+	setNextLetter(letter) {
+		var letterIndex = this.lettersArray.indexOf(letter);
+		if (letterIndex < this.lettersArray.length) {
+			letterIndex += 1;
+		} else {
+			letterIndex = 0;
+		};
+		var nextLetter = this.lettersArray[letterIndex];
+		this.setNewLetterAndSetInMainSelector(nextLetter);
+	};
+
+};
+
+class SaveUnknownPageLetter extends LetterPage {
+
+	changePageAppearance(render=true) {
+		super.changePageAppearance();
+		if (render && this.mainSelector.children[0]) {
+			this.changeLetter(this.mainSelector.children[0].innerHTML);
+			this.setLetterInMainSelector();
+		};
+	};
+
+	changeElementFunctionList() {
+		this.elementList.splice(7, 0, 'inputLetter');
+	};
+
+	setLettersArrays() {
+		super.setLettersArrays();		
+		this.lettersCodes = false;
+		this.lettersArray = this.workWithLetters.unknownLetters.sort();
+	};
+
+	setLetterCode() {
+		this.createZeroLetterCode(this.defaultLetterWidth);
+	};
+
+	setNextLetter() {
+		this.changeLetter(this.lettersArray[0]);
+	};
+
+};
+
+class WorkWithLetters {
+
+	urls = {'letters_codes': '/letters_codes/',
+			'unknown_letters': '/unknown_letters/',
+			'save_unknown_letters': '/save_unknown_letters/',
+			'change_letters': '/change_letters/',			
+			};
+	pages = {'choose_mode': ChooseModePage,
+			'change_letters': ChangeLettersPage,
+			'save_unknown_letters': SaveUnknownPageLetter};
+	letterHeight = 8;
+	defaultLetterWidth = 4;
+	mouseButtonsForPainting = ['add', 'remove'];
+
+	constructor(testMode) {
+		this.testMode = testMode;
+		if (this.testMode) {
+			this.urls = {'letters_codes': '/letters_codes.json',
+						'unknown_letters': '/unknown_letters.json'};
+		};
+		this.downloadJson(this.urls['letters_codes'], 'downloadSavedLettersCodesCallback');
+	};
+
+	downloadJson(requestPath, callbackFunction) {
+		var xhr = new XMLHttpRequest();
+		xhr.open('GET', requestPath);
+		xhr.workWithLetters = this;
+		xhr.onload = function(evt) {
+			var rawData = evt.target.response;
+			var jsonData = JSON.parse(rawData);
+			this.workWithLetters[callbackFunction](jsonData);
+		};
+		xhr.send();
+	};
+
+	downloadSavedLettersCodesCallback(jsonData) {
+		this.savedLettersCodes = jsonData;
+		this.createSavedLettersArray();
+		// console.log(window['workWithLetters']);
+		// this.transformCodeToArrays('A');
+		// console.log(this.savedLettersCodes['A'])
+		this.downloadJson(this.urls['unknown_letters'], 'downloadUnknownLettersCallback');		
+	};
+
+	createSavedLettersArray() {
+		this.savedLettersArray = Object.keys(this.savedLettersCodes).sort();		
+	};
+
+	downloadUnknownLettersCallback(jsonData) {
+		this.unknownLetters = jsonData.unknown_letters;
+		this.sortUnknownLetters();
+		this.createPages();
+		this.openStartPage();
+		// https://learn.javascript.ru/bitwise-operators
+	};
+
+	sortUnknownLetters() {
+		this.unknownLetters.sort();
+	};
+
+	deleteLetterFromUnknownLetters(letter) {
+		this.unknownLetters.splice(this.unknownLetters.indexOf(letter), 1);
+		this.sortUnknownLetters();
+	};
+
+	createPages() {
+		var pageNames = Object.keys(this.pages);
+		for (var i=0;i<pageNames.length;i++) {
+			this.pages[pageNames[i]] = new this.pages[pageNames[i]](pageNames[i], this);
+		};
+	};
+
+	changePageAppearance(pageName, render=true) {
+		// console.log(934, render)
+		this.pages[pageName].changePageAppearance(render);
+	};
+
+	changePage(pageName, renderOpeningPage=true) {
+		// console.log(this.openedPageName)
+		// console.log(936)
+		if (this.openedPageName) {
+			this.changePageAppearance(this.openedPageName, false);
+		};
+		this.openedPageName = pageName;
+		this.changePageAppearance(pageName, renderOpeningPage);
+	};
+
+	openStartPage() {
+		this.changePage('choose_mode');
+	};
+
+	saveLetterCode(pageName) {
+		var page = this.pages[pageName];
+		if (page.currentLetter) {
+			var save = confirm('Are you sure to save this letter?');
+			if (save) {
+				var request = this.getSaveLetterRequest(page);
+				var sum = request.code.reduce((a,b) => a + b, 0);
+				var save = true;
+				if (!sum) {
+					save = confirm('The code is empty. Continue saving?')
+				};
+				if (save) {
+					this.sendRequestForSave(pageName, request);
+				};
+			};
+		} else {
+			alert('There is no unknown letter.\nInput a letter and create the code.');
+		};
+	};
+
+	codeSavedCallback() {
+		var page = this.pages[this.openedPageName];
+		var request = this.getSaveLetterRequest(page);
+		this.savedLettersCodes[request.letter] = request.code;
+		this.createSavedLettersArray();
+		// console.log(this.unknownLetters.indexOf('a'))
+		this.deleteLetterFromUnknownLetters(request.letter);
+		var pagesList = Object.keys(this.pages); 
+		for (var i=0;i<pagesList.length;i++) {
+			var eachPage = this.pages[pagesList[i]];
+			if (eachPage.type == "letterPage") {
+				eachPage.setLettersArrays();
+				eachPage.refreshAllSelectors();
+			};
+			if (page.mainSelector.disabled) {
+				page.unblockMainSelector();
+			};
+		};
+		// console.log(request)
+		alert('The code for the letter "' + request.letter + '" has been saved successfully on the LED-panel');
+		page.inWork = false;
+		page.setNextLetter(request.letter);
+	};
+
+	getSaveLetterRequest(page) {
+		return {letter: page.currentLetter,
+				code: this.getRawLetterCode(page.currentLetterCode)};
+	};
+
+	getRawLetterCode(handledLetterCode) {
+		var rawCode = [];
+		handledLetterCode.forEach(function(eachColumnCode){
+			var code = eachColumnCode.code;
+			rawCode.push(code);
+		});
+		return rawCode;
+	};
+
+	sendRequestForSave(pageName, request) {
+		if (!this.testMode) {
+			this.POST(this.urls[pageName], request);
+		};
+	};
+
+	runCellHandler(event, handlerFunctionName) {
+		if ([1, 3].indexOf(event.which) >= 0) {
+			var action = window.workWithLetters.mouseButtonsForPainting[0];
+			// var action = 'add';
+			if (event.which == 3) {
+				action = window.workWithLetters.mouseButtonsForPainting[1];
+				// action = 'remove';
+			};
+			var cellElement = event.target;
+			var row = Number(cellElement.dataset.row);
+			var column = Number(cellElement.parentElement.dataset.column);
+			var pageName = cellElement.parentElement.parentElement.parentElement.id;
+			var page = window.workWithLetters.pages[pageName];
+			cellElement.classList[action](page.classNames.filledCell);
+			page[handlerFunctionName](column, row, action);
+		};
+	};
+
+	POST(url, request) {
+		// Sending and receiving data in JSON format using POST method
+		var xhr = new XMLHttpRequest();
+		xhr.open("POST", url, true);
+		xhr.setRequestHeader("Content-Type", "application/json");
+		xhr.onreadystatechange = function(event) {
+			// console.log(xhr.readyState)
+			// console.log(xhr.status)
+			if (xhr.readyState === 4 && xhr.status === 200) {
+				// console.log(xhr.responseText);
+				if (xhr.responseText == 'OK') {
+					window.workWithLetters.codeSavedCallback();
+				} else {
+					alert("Can't save letter!\n" + xhr.responseText);
+				};
+				// var json = JSON.parse(xhr.responseText);
+			};
+		};
+		xhr.send(JSON.stringify(request));
+	};
+
+};
+var testMode = false;
+var workWithLetters = new WorkWithLetters(testMode);
+document.onselectstart = function() {return false};
+</script>

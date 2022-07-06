@@ -1,0 +1,5 @@
+[
+{"string": "1st note", "source": "0", "add_in_stack": true},
+{"string": "2nd note", "main_color": "green", "direction": "l", "volume": "notes", "mode": "loop_with_gap", "add_in_stack": true},
+{"string": "3rd note", "main_color": "blue", "direction": "l", "volume": "notes", "mode": "loop_with_gap", "add_in_stack": true}
+]
