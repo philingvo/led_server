@@ -11,4 +11,8 @@ Also it makes requests to the Dictionary Server, handles responses and prepares 
 The server handles control commands by a user or scripts, for instance, choosing working processes.
 Control commands can be sent from this server via its native web interface either the Graphic Interface Application.
 
+All project's software parts:
+1. [LED Server](https://github.com/philingvo/led_server)
+2. [Graphic Interface Application](https://github.com/philingvo/remote_unit_interface)
+
 project.philingvo@gmail.com
